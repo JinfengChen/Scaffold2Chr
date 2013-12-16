@@ -71,7 +71,7 @@ while (<IN>){
     my @unit=split("\t",$_);
     my $supername=sprintf("Scaffold%06d",$unit[1]);
     my $chrname;
-    if ($unit[0]=~/chr(\d+)/i){
+    if ($unit[0]=~/chr(\d+)/){
        $chrname=sprintf("chr%02d",$1);
     }
     if ($unit[3] eq "plus"){
@@ -158,26 +158,22 @@ foreach (sort {$a <=> $b} keys %super){
 close OUT;
 
 my $leftlen;
-my $leftscafn=12;
+my $leftscafn=36;
 our %unmapscaf;
-open OUT1, ">>$opt{project}.chr.fa" or die "$!";
-open OUT2, ">>$opt{project}.super.fa" or die "$!";
+open OUT, ">$opt{project}.unmaped.fa" or die "$!";
 foreach (sort keys %$scafseq){
    $leftscafn++;
    $leftlen+=length $scafseq->{$_};
    my $fseq=formatseq($scafseq->{$_},50);
-   my $leftscaf2=sprintf("Scaffold%06d",$leftscafn);
-   my $leftscaf1=sprintf("super%04d",$leftscafn);
+   my $leftscaf=sprintf("Scaffold%06d",$leftscafn);
    if (exists $unmapscaf{$_}){
       print "Multi Scaffold in Unmaped Scaffold\n";
    }else{
-      $unmapscaf{$_}=[$leftscaf1,$leftscaf2];
-      print OUT1 ">$leftscaf1\n$fseq\n";
-      print OUT2 ">$leftscaf2\n$fseq\n";
+      $unmapscaf{$_}=$leftscaf;
+      print OUT ">$leftscaf\n$fseq\n";
    }
 }
-close OUT1;
-close OUT2;
+close OUT;
 
 
 ################# write gff into files###########################################################
@@ -290,7 +286,7 @@ sub mergegff {
 my ($gff,$scaf2chr,$name)=@_;
 open IN, "$gff" or die "$!";
 open OUT, ">$name.gff" or die "$!";
-#open UN, ">$name.unmaped.gff" or die "$!";
+open UN, ">$name.unmaped.gff" or die "$!";
 while (<IN>){
     chomp $_;
     if ($_ eq ""){
@@ -381,18 +377,17 @@ while (<IN>){
     }else{
        #print "$unit[0]\t$unmapscaf{$unit[0]}\n";
        if (exists $unmapscaf{$unit[0]}){
-           $unit[0]=$unmapscaf{$unit[0]}->[0] if ($name=~/chr/);
-           $unit[0]=$unmapscaf{$unit[0]}->[1] if ($name=~/super/);
+           $unit[0]=$unmapscaf{$unit[0]};
        }else{
            print "Unknown Unmap scaffold\n";
        }
        #$unit[0]="chrUN";
        my $line=join("\t",@unit);
-       print OUT "$line\n";
+       print UN "$line\n";
     }
 }
 close OUT;
-#close UN;
+close UN;
 close IN;
 }
 
